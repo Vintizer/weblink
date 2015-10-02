@@ -52,10 +52,12 @@
 
 		//------------------------------
         var locLength = items.locations.length;
+        var frameContents;
         var inputs = {};
         var trackChanges;
         var itemsPage;
         var mainFrame;
+        var trCount;
 
         jQuery.expr[":"].Contains = jQuery.expr.createPseudo(function(arg) {
             return function( elem ) {
@@ -63,8 +65,8 @@
             };
         });
         function findElements(){
-            var trCount;
             var i;
+            frameContents = $('iframe[name = "SFOMainFrame"]').get(0).contentWindow;
             mainFrame =  $('iframe[name = "SFOMainFrame"]').contents();
             trCount = mainFrame.find('#locationsTable tbody tr').length;
             trackChanges = $('#trackedChanges');
@@ -116,33 +118,6 @@
             findElements();
             initEvents();
         }
-
-        function toggleExpModMain() {
-            if (mainFrame.find('#ExpModCustCA\\[0\\]').is(':checked')) {
-                if (mainFrame.find("#ExperienceModificationCustCABlock").is(':hidden')){
-                    mainFrame.find('#ExpModPlaceholder').
-                            append('<input id="ExperienceModificationCustCA" tabindex="10" name="ExperienceModificationCustCA" maxlength="5" value="" size="6" type="text" autocomplete="off">');
-                    mainFrame.find('#ExperienceModificationCustCABlock').show();
-                }
-                findAndInitEvents();
-                inputs.ExperienceModificationCustCA.value = items.ExpMod;
-            }
-            else {
-                mainFrame.find('#ExperienceModificationCustCABlock').hide();
-                mainFrame.find('#ExperienceModificationCustCA').remove();
-            }
-        }
-
-        function AddLocationRowMain(i) {
-            var rc = mainFrame.find('#locationsTable tbody tr').length;
-            var block = '<tr><td><input name="locationsTable:' + rc + ':locationNum" maxlength="10" size="2"></td>'
-                    + '<td><input name="locationsTable:' + rc + ':_id76" maxlength="40" size="40"></td>'
-                    + '<td><input name="locationsTable:' + rc + ':_id78" maxlength="80" size="30"></td>'
-                    + '<td><input name="locationsTable:' + rc + ':_id80" maxlength="2" size="1"></td>'
-                    + '<td><input name="locationsTable:' + rc + ':_id83" maxlength="5" size="5">-<input name="locationsTable:0:_id85" maxlength="4" size="4"></td></tr>';
-            if (i === rc - 1) $(block).appendTo(mainFrame.find('#locationsTable tbody'));
-        }
-
         function clickFill() {
             inputs.CommercialName.value = items.InsuredName;
             inputs.SupplementaryName.value = items.DBA;
@@ -153,7 +128,9 @@
             inputs.insuredEmailAddr.value = items.Email;
             if (items.ExpMod) {
                 inputs.radioTrue.prop('checked', true);
-                toggleExpModMain();
+                if (!inputs.ExperienceModificationCustCA) frameContents.toggleExpMod();
+                findAndInitEvents();
+                inputs.ExperienceModificationCustCA.value = items.ExpMod;
             }
             items.locations.forEach(function(loc, i){
                 mainFrame.find('input[name = "locationsTable:' + i + ':locationNum"]')[0].value = loc.locNum;
@@ -162,7 +139,7 @@
                 mainFrame.find('input[name = "locationsTable:' + i + ':_id80"]')[0].value = loc.State;
                 mainFrame.find('input[name = "locationsTable:' + i + ':_id83"]')[0].value = loc.Zip.split('-')[0];
                 if (loc.Zip.split('-')[1]) mainFrame.find('input[name = "locationsTable:0:_id85"]')[i].value = loc.Zip.split('-')[1];
-                if (i !== locLength - 1) AddLocationRowMain(i);
+                if (i !== locLength - 1 && trCount < locLength) frameContents.AddLocationRow();
             });
             findAndInitEvents();
             frameInit();
